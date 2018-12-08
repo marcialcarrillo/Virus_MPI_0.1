@@ -2,6 +2,7 @@
 #include <time.h>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
@@ -13,6 +14,8 @@ void fill_infection_matrix_and_compile_stats();
 void cull(int i);
 void infect(int i);
 void move(int i);
+void print_header();
+void print_tick(int);
 
 //Foos END
 
@@ -63,83 +66,86 @@ int main(int argc, char ** argv)
 	copy(vector_global_people.begin() + (people_per_process*process_id * 3), vector_global_people.begin() + (people_per_process*process_id * 3 + people_per_process * 3), vector_local_people.begin());
 	fill_infection_matrix_and_compile_stats();
 
-	cout << "PRINTING GLOBAL";
+	print_header();
+	print_tick(0);
 
-	for (size_t i = 0; i < vector_global_people.size(); i++)
-	{
-		if (i % 3 == 0)
-		{
-			cout << endl << " " << vector_global_people[i];
-		}
-		else
-		{
-			cout << " " << vector_global_people[i];
-		}
-	}
+	//cout << "PRINTING GLOBAL";
 
-	cout << endl << endl << "PRINTING LOCAL" << endl;
+	//for (size_t i = 0; i < vector_global_people.size(); i++)
+	//{
+	//	if (i % 3 == 0)
+	//	{
+	//		cout << endl << " " << vector_global_people[i];
+	//	}
+	//	else
+	//	{
+	//		cout << " " << vector_global_people[i];
+	//	}
+	//}
 
-	for (size_t i = 0; i < vector_local_people.size(); i++)
-	{
-		if (i % 3 == 0)
-		{
-			cout << endl << " " << vector_local_people[i];
-		}
-		else
-		{
-			cout << " " << vector_local_people[i];
-		}
-	}
+	//cout << endl << endl << "PRINTING LOCAL" << endl;
 
-	cout << endl << endl << "PRINTING INFECTION MATRIX" << endl;
+	//for (size_t i = 0; i < vector_local_people.size(); i++)
+	//{
+	//	if (i % 3 == 0)
+	//	{
+	//		cout << endl << " " << vector_local_people[i];
+	//	}
+	//	else
+	//	{
+	//		cout << " " << vector_local_people[i];
+	//	}
+	//}
 
-	for (size_t i = 0; i < infection_matrix.size(); i++)
-	{
-		if (i % input_map_side == 0)
-		{
-			cout << endl << " " << infection_matrix[i];
-		}
-		else
-		{
-			cout << " " << infection_matrix[i];
-		}
-	}
+	//cout << endl << endl << "PRINTING INFECTION MATRIX" << endl;
 
-	for (int i = 0; i < vector_local_people.size(); i += 3)
-	{
-		cull(i);
-		infect(i);
-		move(i);
-	}
+	//for (size_t i = 0; i < infection_matrix.size(); i++)
+	//{
+	//	if (i % input_map_side == 0)
+	//	{
+	//		cout << endl << " " << infection_matrix[i];
+	//	}
+	//	else
+	//	{
+	//		cout << " " << infection_matrix[i];
+	//	}
+	//}
 
-	cout << endl << endl << "PRINTING LOCAL" << endl;
+	//for (int i = 0; i < vector_local_people.size(); i += 3)
+	//{
+	//	cull(i);
+	//	infect(i);
+	//	move(i);
+	//}
 
-	for (size_t i = 0; i < vector_local_people.size(); i++)
-	{
-		if (i % 3 == 0)
-		{
-			cout << endl << " " << vector_local_people[i];
-		}
-		else
-		{
-			cout << " " << vector_local_people[i];
-		}
-	}
+	//cout << endl << endl << "PRINTING LOCAL" << endl;
 
-	fill_infection_matrix_and_compile_stats();
+	//for (size_t i = 0; i < vector_local_people.size(); i++)
+	//{
+	//	if (i % 3 == 0)
+	//	{
+	//		cout << endl << " " << vector_local_people[i];
+	//	}
+	//	else
+	//	{
+	//		cout << " " << vector_local_people[i];
+	//	}
+	//}
 
-	cout << endl << endl << "STATS" << endl;
+	//fill_infection_matrix_and_compile_stats();
 
-	for (size_t j = 0; j < vector_of_vectors_of_stats.size(); j++)
-	{
-		for (size_t i = 0; i < vector_of_vectors_of_stats[j].size(); i++)
-		{
+	//cout << endl << endl << "STATS" << endl;
 
-			cout << " " << vector_of_vectors_of_stats[j][i];
+	//for (size_t j = 0; j < vector_of_vectors_of_stats.size(); j++)
+	//{
+	//	for (size_t i = 0; i < vector_of_vectors_of_stats[j].size(); i++)
+	//	{
 
-		}
-		cout << endl;
-	}
+	//		cout << " " << vector_of_vectors_of_stats[j][i];
+
+	//	}
+	//	cout << endl;
+	//}
 
 	cin.ignore();
 
@@ -231,17 +237,17 @@ void fill_infection_matrix_and_compile_stats()
 		switch (vector_global_people[i] / 10000)
 		{
 		case 1:
-			vector_of_stats[0]++; //succeptible
+			vector_of_stats[0]++; //succeptible			
 			break; //optional
 		case 2:
-			vector_of_stats[1]++; //infected
+			vector_of_stats[1]++; //infected			
 			infection_matrix[input_map_side * vector_global_people[i + 2] + vector_global_people[i + 1]]++;
 			break; //optional
 		case 3:
-			vector_of_stats[2]++; //immune
+			vector_of_stats[2]++; //immune			
 			break; //optional
 		case 4:
-			vector_of_stats[3]++; //dead
+			vector_of_stats[3]++; //dead			
 			break; //optional
 		}	
 
@@ -316,4 +322,100 @@ void move(int i)
 
 
 	}
+}
+
+void print_header()
+{
+	cout.precision(2);
+
+	//To Console
+
+	cout << left << setw(5) << "LEGEND:" << endl;
+	cout << left << setw(7) << " " << "T = Tick" << endl;
+	cout << left << setw(7) << " " << "uInf = Average Infected" << endl;
+	cout << left << setw(7) << " " << "%Inf = Percentage Infected" << endl;
+	cout << left << setw(7) << " " << "TInf = Total Infected" << endl;
+	cout << left << setw(7) << " " << "uDead = Average Dead" << endl;
+	cout << left << setw(7) << " " << "%Dead = Percentage Dead" << endl;
+	cout << left << setw(7) << " " << "TDead = Total Dead" << endl;
+	cout << left << setw(7) << " " << "uRec = Average Recovered" << endl;
+	cout << left << setw(7) << " " << "%Rec = Percentage Recovered" << endl;
+	cout << left << setw(7) << " " << "TRec = Total Recovered" << endl;
+	cout << left << setw(7) << " " << "uSuc = Average Susceptible" << endl;
+	cout << left << setw(7) << " " << "%Suc = Percentage Susceptible" << endl;
+	cout << left << setw(7) << " " << "TSuc = Total Susceptible" << endl << endl;
+
+	cout << left << setw(10) << "T";
+	cout << left << setw(10) << "uInf";
+	cout << left << setw(10) << "%Inf";
+	cout << left << setw(10) << "TInf";
+	cout << left << setw(10) << "uDead";
+	cout << left << setw(10) << "%Dead";
+	cout << left << setw(10) << "TDead";
+	cout << left << setw(10) << "uRec";
+	cout << left << setw(10) << "%Rec";
+	cout << left << setw(10) << "TRec";
+	cout << left << setw(10) << "uSuc";
+	cout << left << setw(10) << "%Suc";
+	cout << left << setw(10) << "TSuc" << endl;
+
+	//To File
+	/* Disabled for now
+
+	*output_file << left << setw(5) << "LEGEND:" << endl;
+	*output_file << left << setw(7) << " " << "T = Tick" << endl;
+	*output_file << left << setw(7) << " " << "uInf = Average Infected" << endl;
+	*output_file << left << setw(7) << " " << "%Inf = Percentage Infected" << endl;
+	*output_file << left << setw(7) << " " << "TInf = Total Infected" << endl;
+	*output_file << left << setw(7) << " " << "uDead = Average Dead" << endl;
+	*output_file << left << setw(7) << " " << "%Dead = Percentage Dead" << endl;
+	*output_file << left << setw(7) << " " << "TDead = Total Dead" << endl;
+	*output_file << left << setw(7) << " " << "uRec = Average Recovered" << endl;
+	*output_file << left << setw(7) << " " << "%Rec = Percentage Recovered" << endl;
+	*output_file << left << setw(7) << " " << "TRec = Total Recovered" << endl;
+	*output_file << left << setw(7) << " " << "uSuc = Average Susceptible" << endl;
+	*output_file << left << setw(7) << " " << "%Suc = Percentage Susceptible" << endl;
+	*output_file << left << setw(7) << " " << "TSuc = Total Susceptible" << endl << endl;
+
+	*output_file << left << setw(10) << "T";
+	*output_file << left << setw(10) << "uInf";
+	*output_file << left << setw(10) << "%Inf";
+	*output_file << left << setw(10) << "TInf";
+	*output_file << left << setw(10) << "uDead";
+	*output_file << left << setw(10) << "%Dead";
+	*output_file << left << setw(10) << "TDead";
+	*output_file << left << setw(10) << "uRec";
+	*output_file << left << setw(10) << "%Rec";
+	*output_file << left << setw(10) << "TRec";
+	*output_file << left << setw(10) << "uSuc";
+	*output_file << left << setw(10) << "%Suc";
+	*output_file << left << setw(10) << "TSuc" << endl << endl;
+
+	*/
+}
+
+void print_tick (int tick)
+{
+		cout.precision(2);
+
+//To console
+
+cout << left << setw(10) << fixed << tick << left << setw(10) << fixed << left << setw(10) << fixed << (double)vector_of_vectors_of_stats[tick][1] / (double)(tick + 1);
+cout << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][1] * 100 / input_people_total << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][1];
+cout << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][3] / (double)(tick + 1) << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][3] * 100 / input_people_total;
+cout << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][3] << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][2] / (double)(tick + 1);
+cout << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][2] * 100 / input_people_total << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][2];
+cout << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][0] / (double)(tick + 1) << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][0] * 100 / input_people_total;
+cout << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][0] << endl;
+
+//To file
+/*
+*output_file << left << setw(10) << fixed << tick << left << setw(10) << fixed << left << setw(10) << fixed << (double)vector_of_vectors_of_stats[tick][1] / (double)(tick + 1);
+*output_file << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][1] * 100 / input_people_total << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][1];
+*output_file << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][3] / (double)(tick + 1) << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][3] * 100 / input_people_total;
+*output_file << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][3] << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][2] / (double)(tick + 1);
+*output_file << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][2] * 100 / input_people_total << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][2];
+*output_file << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][0] / (double)(tick + 1) << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][0] * 100 / input_people_total;
+*output_file << left << setw(10) << fixed << vector_of_vectors_of_stats[tick][0] << endl;
+*/
 }
