@@ -3,12 +3,13 @@
 #include <vector>
 #include <algorithm>
 #include <iomanip>
+#include <mpi.h> 
 
 using namespace std;
 
 //Foos Start
 
-void generate_pople_and_infected();
+void generate_people_and_infected();
 void generate_pople_and_infected_for_all(); //ONLY FOR DEBUGGING
 void fill_infection_matrix_and_compile_stats();
 void cull(int i);
@@ -26,75 +27,123 @@ int input_infection_duration;
 float input_initial_infected_percentage;
 int input_map_side;
 int current_tick;
-int process_id;
-int process_total_ammount;
 int people_per_process;
 
-vector<vector<unsigned short>> vector_of_vectors_of_stats;
+vector<vector<int>> vector_of_vectors_of_stats; // [0] susceptible, [1] infected, [2] immune, [3] dead
 
 
 vector<unsigned short> vector_local_people; // 3 shorts per person
 vector<unsigned short> vector_global_people;
 vector<int> infection_matrix;
 
+//MPI variables
+int process_id;
+int process_total_ammount;
 
 
-int main(int argc, char ** argv)
+int main(int argc, char* argv[])
 {
-	current_tick = 100;
+	current_tick = 0;
 	input_recovery_chance = 0.5;
-	input_infectiousness = 0.3;
-	input_infection_duration = 25;
+	input_infectiousness = 0.65;
+	input_infection_duration = 20;
 
-	input_initial_infected_percentage = 0.5;
-	input_map_side = 10;
-	input_people_total = 120;
-	process_id = 2;
-	process_total_ammount = 4;
+	input_initial_infected_percentage = 0.1;
+	input_map_side = 500;
+	input_people_total = 1000000;
+	//process_id = 2;
+	//process_total_ammount = 4;
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
+	MPI_Comm_size(MPI_COMM_WORLD, &process_total_ammount);
+
 	people_per_process = input_people_total / process_total_ammount;
-	srand(time(NULL));
+	srand(process_id + time(NULL));
 
 
 	vector_local_people.resize(people_per_process * 3);
 	vector_global_people.resize(input_people_total * 3);
 	infection_matrix.resize(input_map_side*input_map_side);
-	//vector_of_stats.resize(4);
+
 	vector_of_vectors_of_stats.reserve(500);
 
-	generate_pople_and_infected_for_all();
 
-	copy(vector_global_people.begin() + (people_per_process*process_id * 3), vector_global_people.begin() + (people_per_process*process_id * 3 + people_per_process * 3), vector_local_people.begin());
-	fill_infection_matrix_and_compile_stats();
+	//generate_pople_and_infected_for_all();
 
-	print_header();
-	print_tick(0);
+	//copy(vector_global_people.begin() + (people_per_process*process_id * 3), vector_global_people.begin() + (people_per_process*process_id * 3 + people_per_process * 3), vector_local_people.begin());
+	generate_people_and_infected();
 
-	//cout << "PRINTING GLOBAL";
+	do
+	{
 
-	//for (size_t i = 0; i < vector_global_people.size(); i++)
+		MPI_Allgather(vector_local_people.data(), vector_local_people.size(), MPI_UNSIGNED_SHORT, vector_global_people.data(), vector_local_people.size(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+
+		fill_infection_matrix_and_compile_stats();
+
+		for (int i = 0; i < vector_local_people.size(); i += 3)
+		{
+			cull(i);
+			infect(i);
+			move(i);
+		}
+
+		current_tick++;
+	} while (vector_of_vectors_of_stats[current_tick - 1][1] != 0);
+	//while (current_tick < 300);
+
+	if (process_id == 0)
+	{
+		print_header();
+		for (size_t i = 0; i < vector_of_vectors_of_stats.size(); i++)
+		{
+			print_tick(i);
+		}
+		
+	}
+
+	//if (process_id == 0)
 	//{
-	//	if (i % 3 == 0)
+	//	cout << "PRINTING GLOBAL";
+
+	//	for (size_t i = 0; i < vector_global_people.size(); i++)
 	//	{
-	//		cout << endl << " " << vector_global_people[i];
-	//	}
-	//	else
-	//	{
-	//		cout << " " << vector_global_people[i];
+	//		if (i % vector_local_people.size() == 0)
+	//		{
+	//			cout << endl;
+	//		}
+	//		if (i % 3 == 0)
+	//		{
+	//			cout << endl << " " << vector_global_people[i];
+	//		}
+	//		else
+	//		{
+	//			cout << " " << vector_global_people[i];
+	//		}
 	//	}
 	//}
 
-	//cout << endl << endl << "PRINTING LOCAL" << endl;
+	//MPI_Barrier(MPI_COMM_WORLD);
 
-	//for (size_t i = 0; i < vector_local_people.size(); i++)
+	//for (size_t i = 0; i < process_total_ammount; i++)
 	//{
-	//	if (i % 3 == 0)
+	//	if (process_id == i)
 	//	{
-	//		cout << endl << " " << vector_local_people[i];
+	//		cout << endl << endl << "LOCAL OF PROCESS " << i << endl;
+
+	//		for (size_t i = 0; i < vector_local_people.size(); i++)
+	//		{
+	//			if (i % 3 == 0)
+	//			{
+	//				cout << endl << " " << vector_local_people[i];
+	//			}
+	//			else
+	//			{
+	//				cout << " " << vector_local_people[i];
+	//			}
+	//		}
 	//	}
-	//	else
-	//	{
-	//		cout << " " << vector_local_people[i];
-	//	}
+	//	MPI_Barrier(MPI_COMM_WORLD);
 	//}
 
 	//cout << endl << endl << "PRINTING INFECTION MATRIX" << endl;
@@ -111,12 +160,6 @@ int main(int argc, char ** argv)
 	//	}
 	//}
 
-	//for (int i = 0; i < vector_local_people.size(); i += 3)
-	//{
-	//	cull(i);
-	//	infect(i);
-	//	move(i);
-	//}
 
 	//cout << endl << endl << "PRINTING LOCAL" << endl;
 
@@ -151,12 +194,14 @@ int main(int argc, char ** argv)
 
 }
 
-void generate_pople_and_infected()
+void generate_people_and_infected()
 {
+	
 	for (int i = 0; i < vector_local_people.size(); i += 3)
 	{
-		//if (i / 3 < input_initial_infected_percentage * people_per_process) //the first people generated will be infected
-		if (rand() / (float)RAND_MAX < input_initial_infected_percentage) //the first people generated will be infected
+		
+		//if (rand() / (float)RAND_MAX < input_initial_infected_percentage) //randomly infect people, for debugging
+		if (i / 3 < input_initial_infected_percentage * people_per_process) //the first people generated will be infected
 		{
 			vector_local_people[i] = 20001;
 		}
@@ -229,7 +274,7 @@ void generate_pople_and_infected_for_all()
 
 void fill_infection_matrix_and_compile_stats()
 {
-	vector<unsigned short> vector_of_stats;
+	vector<int> vector_of_stats;
 	vector_of_stats.resize(4);
 
 	for (int i = 0; i < vector_global_people.size(); i += 3)
@@ -288,7 +333,6 @@ void infect(int i)
 
 void move(int i)
 {
-	cout << " ";
 	if ((vector_local_people[i] / 10000) != 4) //if he aint dead
 	{
 		int direction = rand() % 7; //rolling for one of the 8 (counting the zero) possible directions the person can go to
