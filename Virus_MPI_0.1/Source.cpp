@@ -9,7 +9,7 @@ using namespace std;
 
 void generate_pople_and_infected();
 void generate_pople_and_infected_for_all(); //ONLY FOR DEBUGGING
-void fill_infection_matrix();
+void fill_infection_matrix_and_compile_stats();
 void cull(int i);
 void infect(int i);
 void move(int i);
@@ -27,6 +27,9 @@ int process_id;
 int process_total_ammount;
 int people_per_process;
 
+vector<vector<unsigned short>> vector_of_vectors_of_stats;
+
+
 vector<unsigned short> vector_local_people; // 3 shorts per person
 vector<unsigned short> vector_global_people;
 vector<int> infection_matrix;
@@ -41,9 +44,9 @@ int main(int argc, char ** argv)
 	input_infection_duration = 25;
 
 	input_initial_infected_percentage = 0.5;
-	input_map_side = 4;
-	input_people_total = 40;
-	process_id = 0;
+	input_map_side = 10;
+	input_people_total = 120;
+	process_id = 2;
 	process_total_ammount = 4;
 	people_per_process = input_people_total / process_total_ammount;
 	srand(time(NULL));
@@ -52,11 +55,13 @@ int main(int argc, char ** argv)
 	vector_local_people.resize(people_per_process * 3);
 	vector_global_people.resize(input_people_total * 3);
 	infection_matrix.resize(input_map_side*input_map_side);
+	//vector_of_stats.resize(4);
+	vector_of_vectors_of_stats.reserve(500);
 
 	generate_pople_and_infected_for_all();
 
 	copy(vector_global_people.begin() + (people_per_process*process_id * 3), vector_global_people.begin() + (people_per_process*process_id * 3 + people_per_process * 3), vector_local_people.begin());
-	fill_infection_matrix();
+	fill_infection_matrix_and_compile_stats();
 
 	cout << "PRINTING GLOBAL";
 
@@ -119,6 +124,21 @@ int main(int argc, char ** argv)
 		{
 			cout << " " << vector_local_people[i];
 		}
+	}
+
+	fill_infection_matrix_and_compile_stats();
+
+	cout << endl << endl << "STATS" << endl;
+
+	for (size_t j = 0; j < vector_of_vectors_of_stats.size(); j++)
+	{
+		for (size_t i = 0; i < vector_of_vectors_of_stats[j].size(); i++)
+		{
+
+			cout << " " << vector_of_vectors_of_stats[j][i];
+
+		}
+		cout << endl;
 	}
 
 	cin.ignore();
@@ -201,15 +221,32 @@ void generate_pople_and_infected_for_all()
 	//cout << endl << "People generated!" << endl;
 }
 
-void fill_infection_matrix()
+void fill_infection_matrix_and_compile_stats()
 {
+	vector<unsigned short> vector_of_stats;
+	vector_of_stats.resize(4);
+
 	for (int i = 0; i < vector_global_people.size(); i += 3)
 	{
-		if (vector_global_people[i] / 10000 == 2)
+		switch (vector_global_people[i] / 10000)
 		{
+		case 1:
+			vector_of_stats[0]++; //succeptible
+			break; //optional
+		case 2:
+			vector_of_stats[1]++; //infected
 			infection_matrix[input_map_side * vector_global_people[i + 2] + vector_global_people[i + 1]]++;
-		}
+			break; //optional
+		case 3:
+			vector_of_stats[2]++; //immune
+			break; //optional
+		case 4:
+			vector_of_stats[3]++; //dead
+			break; //optional
+		}	
+
 	}
+	vector_of_vectors_of_stats.push_back(vector_of_stats);
 }
 
 void cull(int i)
@@ -220,7 +257,7 @@ void cull(int i)
 		{
 			if ((rand() / (float)RAND_MAX) <= input_recovery_chance)
 			{
-				vector_local_people[i] += 10000; //becomes immune
+				vector_local_people[i] = 30000; //becomes immune
 			}
 			else
 			{
@@ -248,15 +285,15 @@ void move(int i)
 	cout << " ";
 	if ((vector_local_people[i] / 10000) != 4) //if he aint dead
 	{
-		int direction = rand() % 7;
-		if (direction >= 4)
+		int direction = rand() % 7; //rolling for one of the 8 (counting the zero) possible directions the person can go to
+		if (direction >= 4) //this way we avoid having a position 4 in the roll, meaning that a person can't stay on their current square
 		{
 			direction++;
 		}
-		int new_x = (direction % 3) - 1;
+		int new_x = (direction % 3) - 1; //-1 so it goes from -1 to 1
 		int new_y = (direction / 3) - 1;
 
-		vector_local_people[i + 1] = (vector_local_people[i + 1] + new_x + input_map_side) % input_map_side;
+		vector_local_people[i + 1] = (vector_local_people[i + 1] + new_x + input_map_side) % input_map_side; //we add the side of the map again to avoid underflows when the new axis is -1
 		vector_local_people[i + 2] = (vector_local_people[i + 2] + new_y + input_map_side) % input_map_side;
 
 		//if (rand() % 2 == 1) //moving on X axis
