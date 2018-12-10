@@ -11,7 +11,6 @@ using namespace std;
 //Foos Start
 
 void generate_people_and_infected();
-void generate_pople_and_infected_for_all(); //ONLY FOR DEBUGGING
 void fill_infection_matrix_and_compile_stats();
 void cull(int i);
 void infect(int i);
@@ -28,7 +27,7 @@ int input_people_total;
 double input_infectiousness;
 double input_recovery_chance;
 int input_infection_duration;
-float input_initial_infected_percentage;
+int input_initial_infected_percentage;
 int input_map_side;
 int current_tick = 1;
 int people_per_process;
@@ -46,7 +45,7 @@ int process_total_ammount;
 char parameters_are_valid = '0';
 double local_start, local_finish, local_elapsed, elapsed;
 
-#define PRINTFILE
+#define PRINTFILE //can be commented out to disable file output
 
 
 int main(int argc, char* argv[])
@@ -58,11 +57,7 @@ int main(int argc, char* argv[])
 
 	if (process_id == 0)
 	{
-		parameters_are_valid = validate_parameters(argc, argv);
-		//if (parameters_are_valid == '1')
-		//{
-		//	cout << "In lack of appropriate parameters exp1 (500x500 map, 1m people) will be run instead, Press Enter to continue." << endl << endl;
-		//}
+		parameters_are_valid = validate_parameters(argc, argv); //only the main process validates the parameters and then broadcasts the approval/rejection
 	}
 
 	MPI_Bcast(&parameters_are_valid, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
@@ -88,12 +83,6 @@ int main(int argc, char* argv[])
 		input_map_side = atoi(argv[6]);
 	}
 
-	//if (process_id == 0)
-	//{
-	//	cin.ignore();
-	//}
-	//MPI_Barrier(MPI_COMM_WORLD);
-
 
 	people_per_process = input_people_total / process_total_ammount;
 	srand(process_id + time(NULL));
@@ -105,30 +94,17 @@ int main(int argc, char* argv[])
 
 	vector_of_vectors_of_stats.reserve(500);
 
-
-	//generate_pople_and_infected_for_all();
-
-	//copy(vector_global_people.begin() + (people_per_process*process_id * 3), vector_global_people.begin() + (people_per_process*process_id * 3 + people_per_process * 3), vector_local_people.begin());
-	
 	MPI_Barrier(MPI_COMM_WORLD);
 	local_start = MPI_Wtime();
 	
 	generate_people_and_infected();
 
-	if (process_id == 0)
+	if (process_id == 0) //only the main process prints
 	{
-
 		output_file.open("output.txt");
 
 		print_header(&output_file);
 		print_lengend_and_top_of_table(&output_file);
-		//for (size_t i = 0; i < vector_of_vectors_of_stats.size(); i++)
-		//{
-		//	print_tick(i, &output_file);
-		//}
-
-		//output_file.close();
-
 	}
 
 	do
@@ -147,9 +123,7 @@ int main(int argc, char* argv[])
 
 		if (process_id == 0)
 		{
-			// output_file; //File to write the output in
-			//output_file.open("output.txt");
-			print_tick(current_tick - 1, &output_file);
+			print_tick(current_tick - 1, &output_file); //only the main process prints, by doing it per tick we can see the progression of the algorithm without having to wait for it to complete
 		}
 
 		current_tick++;
@@ -179,101 +153,9 @@ int main(int argc, char* argv[])
 		output_file.close();
 	}
 
-	//while (current_tick < 300);
-
-
-
-	//if (process_id == 0)
-	//{
-	//	cout << "PRINTING GLOBAL";
-
-	//	for (size_t i = 0; i < vector_global_people.size(); i++)
-	//	{
-	//		if (i % vector_local_people.size() == 0)
-	//		{
-	//			cout << endl;
-	//		}
-	//		if (i % 3 == 0)
-	//		{
-	//			cout << endl << " " << vector_global_people[i];
-	//		}
-	//		else
-	//		{
-	//			cout << " " << vector_global_people[i];
-	//		}
-	//	}
-	//}
-
-	//MPI_Barrier(MPI_COMM_WORLD);
-
-	//for (size_t i = 0; i < process_total_ammount; i++)
-	//{
-	//	if (process_id == i)
-	//	{
-	//		cout << endl << endl << "LOCAL OF PROCESS " << i << endl;
-
-	//		for (size_t i = 0; i < vector_local_people.size(); i++)
-	//		{
-	//			if (i % 3 == 0)
-	//			{
-	//				cout << endl << " " << vector_local_people[i];
-	//			}
-	//			else
-	//			{
-	//				cout << " " << vector_local_people[i];
-	//			}
-	//		}
-	//	}
-	//	MPI_Barrier(MPI_COMM_WORLD);
-	//}
-
-	//cout << endl << endl << "PRINTING INFECTION MATRIX" << endl;
-
-	//for (size_t i = 0; i < infection_matrix.size(); i++)
-	//{
-	//	if (i % input_map_side == 0)
-	//	{
-	//		cout << endl << " " << infection_matrix[i];
-	//	}
-	//	else
-	//	{
-	//		cout << " " << infection_matrix[i];
-	//	}
-	//}
-
-
-	//cout << endl << endl << "PRINTING LOCAL" << endl;
-
-	//for (size_t i = 0; i < vector_local_people.size(); i++)
-	//{
-	//	if (i % 3 == 0)
-	//	{
-	//		cout << endl << " " << vector_local_people[i];
-	//	}
-	//	else
-	//	{
-	//		cout << " " << vector_local_people[i];
-	//	}
-	//}
-
-	//fill_infection_matrix_and_compile_stats();
-
-	//cout << endl << endl << "STATS" << endl;
-
-	//for (size_t j = 0; j < vector_of_vectors_of_stats.size(); j++)
-	//{
-	//	for (size_t i = 0; i < vector_of_vectors_of_stats[j].size(); i++)
-	//	{
-
-	//		cout << " " << vector_of_vectors_of_stats[j][i];
-
-	//	}
-	//	cout << endl;
-	//}
-
 	if (process_id == 0)
 		cin.ignore();
-	MPI_Barrier(MPI_COMM_WORLD); // para sincronizar la finalización de los procesos
+	MPI_Barrier(MPI_COMM_WORLD); // to sync the before finalize
 
 	MPI_Finalize();
 
@@ -285,82 +167,28 @@ void generate_people_and_infected()
 	for (int i = 0; i < vector_local_people.size(); i += 3)
 	{
 
-		//if (rand() / (float)RAND_MAX < input_initial_infected_percentage) //randomly infect people, for debugging
-		if (i / 3 < (input_initial_infected_percentage / 100.0) * people_per_process) //the first people generated will be infected
+		if (i / 3 < (input_initial_infected_percentage / 100.0) * people_per_process) //the first people generated will be infected, doesn't add a bias since they all have random coordinates
 		{
-			vector_local_people[i] = 20000; //tick of inffection set to zero
+			vector_local_people[i] = 20000; //tick of infection set to zero
 		}
 		else
 		{
 			vector_local_people[i] = 10000;
 		}
 
-		//if (i == 27)
-		//{
-		//	cout << input_initial_infected_percentage * people_per_process;
-		//}
-
-
-		//int new_x = rand() % input_map_side;
-		//int new_y = rand() % input_map_side;
-		//vector_local_people[i + 1] = new_x;
-		//vector_local_people[i + 2] = new_y;
-
 		vector_local_people[i + 1] = rand() % input_map_side;
 		vector_local_people[i + 2] = rand() % input_map_side;
 
-		//if (vector_local_people[i] / 10000 == 2)
-		//{
-		//	infection_matrix[input_map_side*new_y + new_x]++;
-		//}
-
 	}
-
-	//cout << endl << "People generated!" << endl;
 }
 
-void generate_pople_and_infected_for_all()
-{
-	for (int i = 0; i < vector_global_people.size(); i += 3)
-	{
-		//if (i / 3 < input_initial_infected_percentage * input_people_total) //the first people generated will be infected
-		if (rand() / (float)RAND_MAX < input_initial_infected_percentage) //the first people generated will be infected
-		{
-			vector_global_people[i] = 20000;
-		}
-		else
-		{
-			vector_global_people[i] = 10000;
-		}
-
-		//if (i == 117)
-		//{
-		//	cout << input_initial_infected_percentage * people_per_process;
-		//}
-
-
-		//int new_x = rand() % input_map_side;
-		//int new_y = rand() % input_map_side;
-		//vector_global_people[i + 1] = new_x;
-		//vector_global_people[i + 2] = new_y;
-
-		vector_global_people[i + 1] = rand() % input_map_side;
-		vector_global_people[i + 2] = rand() % input_map_side;
-
-		//if (vector_global_people[i] / 10000 == 2)
-		//{
-		//	infection_matrix[input_map_side*new_y + new_x]++;
-		//}
-
-	}
-
-	//cout << endl << "People generated!" << endl;
-}
 
 void fill_infection_matrix_and_compile_stats()
 {
 	vector<int> vector_of_stats;
 	vector_of_stats.resize(4);
+	infection_matrix.clear(); //wipe clean the infection matrix to avoid carrying over information from the previous tick
+	infection_matrix.resize(input_map_side*input_map_side);
 
 	for (int i = 0; i < vector_global_people.size(); i += 3)
 	{
@@ -408,7 +236,7 @@ void infect(int i)
 {
 	if (vector_local_people[i] / 10000 == 1)
 	{
-		//comparing againts the cummulative infection chance
+		//comparing againts the cummulative infection chance, by using this formula we can call rand() only once instead of once per infection "roll"
 		if ((rand() / (float)RAND_MAX) <= (1 - pow(1 - input_infectiousness, infection_matrix[input_map_side * vector_global_people[i + 2] + vector_global_people[i + 1]])))
 		{
 			vector_local_people[i] = 20000 + current_tick; //marks the person as infected and adds the time of infection 
@@ -418,9 +246,9 @@ void infect(int i)
 
 void move(int i)
 {
-	if ((vector_local_people[i] / 10000) != 4) //if he aint dead
+	if ((vector_local_people[i] / 10000) != 4) //if he ins't dead
 	{
-		int direction = rand() % 7; //rolling for one of the 8 (counting the zero) possible directions the person can go to
+		int direction = rand() % 7; //rolling for one of the 8 (starting from zero) possible directions the person can go to
 		if (direction >= 4) //this way we avoid having a position 4 in the roll, meaning that a person can't stay on their current square
 		{
 			direction++;
@@ -430,26 +258,7 @@ void move(int i)
 
 		vector_local_people[i + 1] = (vector_local_people[i + 1] + new_x + input_map_side) % input_map_side; //we add the side of the map again to avoid underflows when the new axis is -1
 		vector_local_people[i + 2] = (vector_local_people[i + 2] + new_y + input_map_side) % input_map_side;
-
-		//if (rand() % 2 == 1) //moving on X axis
-		//{
-		//	vector_local_people[i + 2] = vector_local_people[i + 1] + 1 % input_map_side; //forwards in axis
-		//}
-		//else
-		//{
-		//	vector_local_people[i + 2] = vector_local_people[i + 1] - 1 % input_map_side;	//backwards in axis
-		//}
-
-		//if (rand() % 2 == 1) //moving on Y axis
-		//{
-		//	vector_local_people[i + 2] = vector_local_people[i + 2] + 1 % input_map_side; //forwards in axis
-		//}
-		//else
-		//{
-		//	vector_local_people[i + 2] = vector_local_people[i + 2] - 1 % input_map_side; //backwards in axis
-		//}
-
-
+			   		 
 	}
 }
 
@@ -468,13 +277,12 @@ void print_header(ofstream* output_file)
 	cout << endl;
 
 	cout << "DATA: " << endl << endl;
-	cout << fixed << "-People quantity: " << input_people_total << endl;
+	cout << fixed << "-Number of People: " << input_people_total << endl;
 	cout << fixed << "-Infectiousness: " << input_infectiousness << endl;
-	cout << fixed << "-Chance Recover: " << input_recovery_chance << endl;
-	cout << fixed << "-Infect duration: " << input_infection_duration << endl;
+	cout << fixed << "-Chance to recover: " << input_recovery_chance << endl;
+	cout << fixed << "-Infection duration: " << input_infection_duration << endl;
 	cout << fixed << "-Initial infected: " << input_initial_infected_percentage << "%" << endl;
 	cout << fixed << "-Map size: " << input_map_side << "x" << input_map_side << endl;
-	//cout << fixed << "-Tick quantity: " << input_tick_quantity << endl << endl;
 
 	//To file
 #	ifdef PRINTFILE
@@ -492,10 +300,10 @@ void print_header(ofstream* output_file)
 	*output_file << endl;
 
 	*output_file << "DATA: " << endl << endl;
-	*output_file << fixed << "-People quantity: " << input_people_total << endl;
+	*output_file << fixed << "-Number of People: " << input_people_total << endl;
 	*output_file << fixed << "-Infectiousness: " << input_infectiousness << endl;
-	*output_file << fixed << "-Chance Recover: " << input_recovery_chance << endl;
-	*output_file << fixed << "-Infect duration: " << input_infection_duration << endl;
+	*output_file << fixed << "-Chance to recover: " << input_recovery_chance << endl;
+	*output_file << fixed << "-Infection duration: " << input_infection_duration << endl;
 	*output_file << fixed << "-Initial infected: " << input_initial_infected_percentage << "%" << endl;
 	*output_file << fixed << "-Map size: " << input_map_side << "x" << input_map_side << endl;
 
